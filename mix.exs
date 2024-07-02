@@ -51,6 +51,7 @@ defmodule ExAws.Dynamo.Mixfile do
       {:hackney, ">= 0.0.0", only: [:dev, :test]},
       {:jason, ">= 0.0.0", only: [:dev, :test]},
       {:sweet_xml, ">= 0.0.0", only: [:dev, :test]},
+      {:stream_data, "~> 1.1.2", only: [:dev, :test]},
       ex_aws()
     ]
   end
