@@ -1,6 +1,11 @@
 defmodule ExAws.Dynamo.EncoderTest do
   use ExUnit.Case, async: true
+
+  alias ExAws.Dynamo.Encoded
   alias ExAws.Dynamo.Encoder
+
+  doctest Encoder
+  doctest Encoded
 
   test "Encoder converts numbers to binaries" do
     assert Encoder.encode(34) == %{"N" => "34"}
@@ -80,5 +85,14 @@ defmodule ExAws.Dynamo.EncoderTest do
   test "encoder nil works" do
     assert Encoder.encode(nil) == %{"NULL" => true}
     assert Encoder.encode(%{"key" => nil}) == %{"M" => %{"key" => %{"NULL" => true}}}
+  end
+
+  test "encoder passes through #{Encoded} values unchanged" do
+    encoded = Encoded.new(%{"B" => "string data as binary"})
+
+    assert Encoder.encode(encoded) == %{"B" => "string data as binary"}
+
+    assert Encoder.encode(%{"encoded" => encoded, "not_encoded" => "not encoded"}) ==
+             %{"M" => %{"encoded" => %{"B" => "string data as binary"}, "not_encoded" => %{"S" => "not encoded"}}}
   end
 end
