@@ -30,6 +30,12 @@ defimpl ExAws.Dynamo.Encodable, for: HashDict do
   end
 end
 
+defimpl ExAws.Dynamo.Encodable, for: ExAws.Dynamo.Encoded do
+  def encode(encoded, _) do
+    encoded.value
+  end
+end
+
 defimpl ExAws.Dynamo.Encodable, for: Any do
   defmacro __deriving__(module, struct, options) do
     deriving(module, struct, options)

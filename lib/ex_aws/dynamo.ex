@@ -46,16 +46,18 @@ defmodule ExAws.Dynamo do
 
   Consult the function documentation to see precisely which options are handled this way.
 
-  If you wish to avoid this kind of automatic behaviour, you are free to specify the types yourself.
+  If you wish to avoid this kind of automatic behaviour, you are free to specify the types yourself
+  by using `ExAws.Dynamo.Encoded`.
   For example,
   ```elixir
-  ExAws.Dynamo.scan("Users", expression_attribute_values: [api_key: %{"B" => "Treated as binary"}])
+  ExAws.Dynamo.scan("Users", expression_attribute_values: [api_key: ExAws.Dynamo.Encoded.new(%{"B" => "Treated as binary"})])
   ```
   becomes
   ```elixir
   %{"ExpressionAttributeValues" => %{api_key: %{"B" => "Treated as binary"}}, "TableName" => "Users"}
   ```
-  Alternatively, if what's being encoded is a struct, you're always free to implement ExAws.Dynamo.Encodable for that struct.
+  Alternatively, if what's being encoded is a struct, you're always free to implement
+  `ExAws.Dynamo.Encodable` for that struct.
 
   https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Operations.html
   """

@@ -1,6 +1,11 @@
 defmodule ExAws.Dynamo.EncoderTest do
   use ExUnit.Case, async: true
+
+  alias ExAws.Dynamo.Encoded
   alias ExAws.Dynamo.Encoder
+
+  doctest Encoder
+  doctest Encoded
 
   test "Encoder converts numbers to binaries" do
     assert Encoder.encode(34) == %{"N" => "34"}
@@ -92,5 +97,14 @@ defmodule ExAws.Dynamo.EncoderTest do
              "email" => %{"M" => %{"S" => %{"S" => "foo@bar.com"}}},
              "name" => %{"M" => %{"S" => %{"S" => "Bob"}}}
            } == Encoder.encode_root(user_except)
-  end
+    end
+
+    test "encoder passes through #{Encoded} values unchanged" do
+      encoded = Encoded.new(%{"B" => "string data as binary"})
+
+      assert Encoder.encode(encoded) == %{"B" => "string data as binary"}
+
+      assert Encoder.encode(%{"encoded" => encoded, "not_encoded" => "not encoded"}) ==
+               %{"M" => %{"encoded" => %{"B" => "string data as binary"}, "not_encoded" => %{"S" => "not encoded"}}}
+    end
 end
