@@ -1,5 +1,6 @@
 defmodule ExAws.DynamoIntegrationTest do
   use ExUnit.Case, async: true
+  use ExUnitProperties
 
   ## These tests run against DynamoDB Local
   #
@@ -12,6 +13,7 @@ defmodule ExAws.DynamoIntegrationTest do
   case DDBLocal.try_connect() do
     :ok ->
       alias ExAws.Dynamo, warn: false
+      alias Test.Generators
 
       setup_all do
         tables = [
@@ -24,7 +26,8 @@ defmodule ExAws.DynamoIntegrationTest do
           "TestTransactions",
           "TestTransactions2",
           "TestStream",
-          "TestUpdate"
+          "TestUpdate",
+          "TestItems"
         ]
 
         DDBLocal.delete_test_tables(tables)
@@ -327,6 +330,23 @@ defmodule ExAws.DynamoIntegrationTest do
                 }} =
                  Dynamo.update_table("TestUpdate", stream_enabled: true, stream_view_type: :new_image)
                  |> ExAws.request()
+      end
+
+      property "the stored item is the same as the retrieved item" do
+        {:ok, _} = Dynamo.create_table("TestItems", :pk, [pk: :string], 1, 1) |> ExAws.request()
+
+        check all(item <- Generators.item()) do
+          item = Map.put(item, :pk, "item-key")
+
+          assert {:ok, _} = Dynamo.put_item("TestItems", item) |> ExAws.request()
+
+          db_item =
+            Dynamo.get_item("TestItems", %{pk: item.pk})
+            |> ExAws.request!()
+            |> Dynamo.decode_item()
+
+          assert db_item == item |> Map.put("pk", item.pk) |> Map.drop([:pk])
+        end
       end
 
     {:error, :econnrefused} ->

@@ -18,18 +18,7 @@ defmodule ExAws.Dynamo.Encoder do
 
   alias ExAws.Dynamo.Encodable
 
-  # These functions exist to ensure that encoding is idempotent.
   def encode(value), do: encode(value, [])
-  def encode(%{"B" => _} = val, _), do: val
-  def encode(%{"BOOL" => _} = val, _), do: val
-  def encode(%{"BS" => _} = val, _), do: val
-  def encode(%{"L" => _} = val, _), do: val
-  def encode(%{"M" => _} = val, _), do: val
-  def encode(%{"NS" => _} = val, _), do: val
-  def encode(%{"NULL" => _} = val, _), do: val
-  def encode(%{"N" => _} = val, _), do: val
-  def encode(%{"S" => _} = val, _), do: val
-  def encode(%{"SS" => _} = val, _), do: val
 
   def encode(value, options), do: Encodable.encode(value, options)
 

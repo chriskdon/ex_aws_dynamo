@@ -169,7 +169,7 @@ defmodule ExAws.Dynamo do
   end
 
   def decode_item(item, opts) do
-    Decoder.decode(item, opts)
+    Decoder.decode_root(item, opts)
   end
 
   @doc "List tables"

@@ -1,7 +1,12 @@
 defmodule ExAws.Dynamo.DecoderTest do
   use ExUnit.Case, async: true
+  use ExUnitProperties
+
   alias ExAws.Dynamo.Decoder
   alias ExAws.Dynamo.Encoder
+  alias Test.Generators
+
+  doctest Decoder
 
   test "Decode boolean (boolean and string boolean)" do
     assert Decoder.decode(%{"BOOL" => true}) == true
@@ -13,7 +18,7 @@ defmodule ExAws.Dynamo.DecoderTest do
   end
 
   test "Decode map (different types)" do
-    assert %{"M" => %{"M" => %{foo: %{"S" => "bar"}, bar: %{"N" => 23}}}}
+    assert %{"M" => %{foo: %{"S" => "bar"}, bar: %{"N" => 23}}}
            |> Decoder.decode() == %{foo: "bar", bar: 23}
   end
 
@@ -66,5 +71,24 @@ defmodule ExAws.Dynamo.DecoderTest do
                "B" => "BcGBCQAgCATAVX6ZBvlKUogP1P3pbmi9bYlFwal9DTPEDCu0s8E06DWqM3TqAw=="
              })
            ) == "Encoder can handle binaries that are not strings"
+  end
+
+  test "Decodes maps with reserved keys" do
+    type_names = ["BOOL", "NULL", "B", "S", "M", "L", "BS", "SS", "NS", "N"]
+
+    root_key_maps = Enum.map(type_names, fn t -> %{"#{t}" => "value"} end)
+    nested_key_maps = Enum.map(type_names, fn t -> %{"root" => %{"#{t}" => "value"}} end)
+
+    test_maps = root_key_maps ++ nested_key_maps
+
+    Enum.each(test_maps, fn m ->
+      assert m |> Encoder.encode() |> Decoder.decode() == m
+    end)
+  end
+
+  property "encoding and decoding returns the same data" do
+    check all(data <- Generators.attribute()) do
+      assert data |> Encoder.encode() |> Decoder.decode() == data
+    end
   end
 end
