@@ -68,11 +68,6 @@ defmodule ExAws.Dynamo.EncoderTest do
                  end
   end
 
-  test "encoder is idempotent" do
-    value = %{foo: 1, bar: %{baz: 2, zounds: "asdf"}}
-    assert value |> Encoder.encode() == value |> Encoder.encode() |> Encoder.encode()
-  end
-
   test "encoder works with nested structs" do
     nested_structs =
       %Test.Nested{items: [%Test.Nested{items: ["asdf"], secret: "foo"}], secret: "bar"}

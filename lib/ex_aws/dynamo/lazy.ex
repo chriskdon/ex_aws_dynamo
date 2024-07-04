@@ -1,6 +1,8 @@
 defmodule ExAws.Dynamo.Lazy do
   @moduledoc false
 
+  alias ExAws.Dynamo.Decoder
+
   ## Implementation of the lazy functions surfaced by ExAws.Dynamo.Client
 
   @doc "Generates a scan stream"
@@ -23,7 +25,7 @@ defmodule ExAws.Dynamo.Lazy do
         {fun, args} ->
           case fun.(args) do
             %{"Items" => items, "LastEvaluatedKey" => key} ->
-              {items, {fun, [exclusive_start_key: key]}}
+              {items, {fun, [exclusive_start_key: Decoder.decode_root(key)]}}
 
             %{"Items" => items} ->
               {items, :quit}
