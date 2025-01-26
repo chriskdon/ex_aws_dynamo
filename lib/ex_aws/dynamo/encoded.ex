@@ -53,7 +53,26 @@ defmodule ExAws.Dynamo.Encoded do
   ```
   """
   @spec new(value :: typed_value()) :: t()
-  def new(value) when is_map(value) do
+  def new(value) when map_size(value) == 1 do
     %__MODULE__{value: value}
+  end
+
+  def new(value) do
+    raise ArgumentError, """
+    expected a map representing an encoded Dynamo value
+
+    The value being encoded should be a map with a single key and value \
+    of the form: %{"<attribute type>" => <value>}.
+
+    For example:
+
+      * %{"S" => "foo"}
+      * %{"N" => "123"}
+      * %{"M" => %{"foo" => %{"S" => "bar"}}}
+
+    Please ensure the value is encoded correctly, got:
+
+    #{inspect(value)}
+    """
   end
 end

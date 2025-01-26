@@ -81,30 +81,53 @@ defmodule ExAws.Dynamo.Decoder do
   Use these if you just want the Dynamo result to look more like Elixir without
   coercing it into a particular struct.
   """
-  def decode(%{"BOOL" => true}), do: true
-  def decode(%{"BOOL" => false}), do: false
-  def decode(%{"BOOL" => "true"}), do: true
-  def decode(%{"BOOL" => "false"}), do: false
-  def decode(%{"NULL" => true}), do: nil
-  def decode(%{"NULL" => "true"}), do: nil
-  def decode(%{"B" => value}), do: Base.decode64!(value)
-  def decode(%{"S" => value}), do: value
-  def decode(%{"BS" => values}), do: MapSet.new(values)
-  def decode(%{"M" => value}), do: Map.new(value, fn {k, v} -> {k, decode(v)} end)
-  def decode(%{"SS" => values}), do: MapSet.new(values)
+  def decode(value) when map_size(value) == 1 do
+    do_decode(value)
+  end
 
-  def decode(%{"NS" => values}) do
+  def decode(value) do
+    raise ArgumentError, """
+    expected a map representing an encoded Dynamo value
+
+    The value being decoded should be a map with a single key and value \
+    of the form: %{"<attribute type>" => <value>}.
+
+    For example:
+
+      * %{"S" => "foo"}
+      * %{"N" => "123"}
+      * %{"M" => %{"foo" => %{"S" => "bar"}}}
+
+    Please ensure the value being decoded is in the correct format, got:
+
+    #{inspect(value)}
+    """
+  end
+
+  defp do_decode(%{"BOOL" => true}), do: true
+  defp do_decode(%{"BOOL" => false}), do: false
+  defp do_decode(%{"BOOL" => "true"}), do: true
+  defp do_decode(%{"BOOL" => "false"}), do: false
+  defp do_decode(%{"NULL" => true}), do: nil
+  defp do_decode(%{"NULL" => "true"}), do: nil
+  defp do_decode(%{"B" => value}), do: Base.decode64!(value)
+  defp do_decode(%{"S" => value}), do: value
+  defp do_decode(%{"BS" => values}), do: MapSet.new(values)
+  defp do_decode(%{"M" => value}), do: Map.new(value, fn {k, v} -> {k, decode(v)} end)
+  defp do_decode(%{"SS" => values}), do: MapSet.new(values)
+
+  defp do_decode(%{"NS" => values}) do
     values
     |> Stream.map(&binary_to_number/1)
     |> Enum.into(MapSet.new())
   end
 
-  def decode(%{"L" => values}) do
+  defp do_decode(%{"L" => values}) do
     Enum.map(values, &decode/1)
   end
 
-  def decode(%{"N" => value}) when is_binary(value), do: binary_to_number(value)
-  def decode(%{"N" => value}) when value |> is_integer or value |> is_float, do: value
+  defp do_decode(%{"N" => value}) when is_binary(value), do: binary_to_number(value)
+  defp do_decode(%{"N" => value}) when value |> is_integer or value |> is_float, do: value
 
   @doc "Attempts to convert a number to a float, and then an integer"
   def binary_to_number(binary) when is_binary(binary) do
