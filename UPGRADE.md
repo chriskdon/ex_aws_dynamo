@@ -1,5 +1,63 @@
 # Upgrading
 
+## 4.X.X to 5.X.X
+
+If your code relied on the behavior that the default encoding of built-in Elixir types could be overridden by
+providing the value as a pre-encoded map with [type descriptors](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypeDescriptors), you are now required to wrap it in a call to `ExAws.Dynamo.Encoded.new/1` to explicitly indicate this is occurring.
+
+For example, the following:
+
+```elixir
+ExAws.Dynamo.scan("table", expression_attribute_values: [
+  api_key: %{"B" => "Treated as binary"}
+])
+```
+
+becomes:
+
+```elixir
+ExAws.Dynamo.scan("table", expression_attribute_values: [
+  api_key: ExAws.Dynamo.Encoded.new(%{"B" => "Treated as binary"})
+])
+```
+
+These changes are necessary because prior to version **5.0.0**, there could be encoding/decoding confusion
+where the values expected to be stored in DynamoDB were not the same values returned after decoding. This
+occurs when a key is present on the item that matches the name of a type descriptor (e.g. "M", "S", "N", etc.)
+
+Before version **5.0.0** the following could occur if an item contained one of these keys:
+
+```elixir
+iex> item = %{"pk" => "pk-1", "S" => %{"N" => "value"}}
+%{"S" => %{"N" => "value"}, "pk" => "pk-1"}
+
+iex> Dynamo.put_item("table", item) |> ExAws.request!()
+iex> db_item = Dynamo.get_item("table", %{"pk" => "pk-1"}) |> ExAws.request!()
+iex> Dynamo.Decoder.decode(%{"M" => db_item["Item"]})
+
+# Decodes to a different value than what was stored
+%{"M" => %{"N" => %{"S" => "value"}}}
+```
+
+After upgrading to version **5.0.0**, items with these keys will decode to the exact
+same item structure that was initially stored (unless `ExAws.Dynamo.Encoded` was used).
+
+```elixir
+iex> item = %{"pk" => "pk-1", "S" => %{"N" => "value"}}
+%{"S" => %{"N" => "value"}, "pk" => "pk-1"}
+
+iex> Dynamo.put_item("table", item) |> ExAws.request!()
+iex> db_item = Dynamo.get_item("table", %{"pk" => "pk-1"}) |> ExAws.request!()
+iex> Dynamo.Decoder.decode(%{"M" => db_item["Item"]})
+
+# Decodes to the exact same value that was stored
+%{"S" => %{"N" => "value"}, "pk" => "pk-1"}
+```
+
+For most applications, nothing will need to change. However, if your code was expecting the
+alternate decoding from version 4.x, you may need to make adjustments to ensure you are correctly handling
+the change to decoded values.
+
 ## 3.X.X to 4.X.X
 
 ### Empty string/binary values allowed
